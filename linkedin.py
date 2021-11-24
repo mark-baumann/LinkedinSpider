@@ -20,7 +20,7 @@ class Session:
 
     HOME_URL = "https://www.linkedin.com"
 
-    def __init__(self, user_data="USERDATA", store_session=True):
+    def __init__(self, store_session=True):
 
         self.session_data = {
             "duration": 0,
@@ -61,15 +61,13 @@ class Session:
         options = uc.ChromeOptions()
 
         # Create empty profile to avoid loggin in every time
+        # Create empty profile to avoid annoying Mac Popup
         if store_session:
-            if not user_data:
-                user_data =  f"{Path().absolute()}/chrome_profile/"
+            if not os.path.isdir(f'./chrome_profile'):
+                os.mkdir(f'./chrome_profile')
 
-            if not os.path.isdir(user_data):
-                os.mkdir(user_data)
-
-                Path(f'{user_data}First Run').touch()
-                options.add_argument(f"--user-data-dir={user_data}")
+            Path(f'./chrome_profile/First Run').touch()
+            options.add_argument(f'--user-data-dir=./chrome_profile/')
 
         options.add_argument('--no-first-run --no-service-autorun --password-store=basic')
         options.add_argument("--lang=en-GB")
@@ -161,28 +159,33 @@ class Session:
 
         print(f"Starting to generate {amount} profile views.")
 
-        current_page = 0
+        current_page = random.randint(1, 500)
         while True:
-            xpath_hrefs = '//a[contains(@href, "in/")]'
+            xpath_href = '//a[contains(@href, "in/")]'
             try:
                 WebDriverWait(self.browser, 5).until(
-                    EC.presence_of_element_located((By.XPATH, xpath_hrefs)))
+                    EC.presence_of_element_located((By.XPATH, xpath_href)))
 
-                done_profile_els = self.browser.find_elements(By.XPATH, xpath_hrefs)
-                done_profile_el = random.choice(done_profile_els)
+                done_profile_els = self.browser.find_elements(By.XPATH, xpath_href)
 
-                href = done_profile_el.get_attribute('href')
+                for done_profile_el in done_profile_els:
+                    href = done_profile_el.get_attribute('href')
 
-                if not any(map(href, self.visited_profiles)):
-                    self.visited_profiles.append(href)
+                    # Avoid subpages of the same profile
+                    if 'detail' in href:
+                        continue
 
-                    done_profile_el.click()
+                    if not href in self.visited_profiles:
+                        self.visited_profiles.append(href)
 
-                    self.session_data['page_visits'] += 1
-                    if self.session_data.get('page_visits') >= amount:
-                        return
+                        done_profile_el.click()
 
-                    time.sleep(sleep)
+                        self.session_data['page_visits'] += 1
+                        if self.session_data.get('page_visits') >= amount:
+                            return
+
+                        time.sleep(sleep)
+                        break
 
             except:
                 current_page += 1
