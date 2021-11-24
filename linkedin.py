@@ -159,7 +159,7 @@ class Session:
 
         print(f"Starting to generate {amount} profile views.")
 
-        current_page = random.randint(1, 500)
+        current_page = 1
         while True:
             xpath_href = '//a[contains(@href, "in/")]'
             try:
@@ -171,8 +171,8 @@ class Session:
                 for done_profile_el in done_profile_els:
                     href = done_profile_el.get_attribute('href')
 
-                    # Avoid subpages of the same profile
-                    if 'detail' in href:
+                    # Avoid subpages of the same profile and FAQ or documentation
+                    if 'detail' in href or 'help' in href or 'answer' in href:
                         continue
 
                     if not href in self.visited_profiles:
